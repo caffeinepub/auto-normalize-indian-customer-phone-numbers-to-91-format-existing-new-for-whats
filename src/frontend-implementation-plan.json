@@ -1,0 +1,47 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Deployment verification: AMC tab visibility & ₹ currency formatting",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Produce a new build/deployment from the current code state without feature changes.",
+      "acceptanceCriteria": [
+        "A new deployment/build is produced from the current codebase state without requiring additional feature changes.",
+        "The newly deployed version is accessible via the standard preview/live URL used by the platform."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/DEPLOYMENT.md",
+          "operation": "create",
+          "description": "Add a lightweight deployment checklist for producing a new build from the current state (no functional changes), including how to access the standard preview/live URL and confirm the correct build is running."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Verify AMC tab visibility for authenticated users and enforce consistent ₹ currency formatting across the UI.",
+      "acceptanceCriteria": [
+        "When logged in, the Dashboard shows an \"AMC\" tab and the AMC screen renders without errors.",
+        "UI-rendered money amounts use ₹ formatting consistently (including dashboards and analytics views)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/utils.ts",
+          "operation": "modify",
+          "description": "Harden currency formatting to consistently display INR with the ₹ symbol (e.g., using Intl.NumberFormat options that prefer the narrow symbol) and keep behavior consistent for existing call sites that pass paise-like minor units. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Add a small, explicit verification-friendly guard/annotation to ensure the \"AMC\" tab trigger and its content wiring remain present for authenticated sessions (Dashboard renders only when authenticated per app flow), and confirm the AMC tab content mounts without runtime errors. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Confirm authenticated-only access to application data remains enforced (per the authorization component's frontend guidance: users must be logged in before seeing application data), and add a brief internal verification note/check to validate AMC tab visibility after deployment. Verify the component's usage instructions before implementing."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-deploy-a-new-build-of-the-current-application-state-so-the-latest-changes-are-live-previewable",
+      "featureTitle": "Deploy a new build of the current application state so the latest changes are live/previewable.",
+      "files": [
+        "frontend/DEPLOYMENT.md"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "blob-storage@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-after-deployment-verify-that-the-amc-tab-is-visible-for-authenticated-users-and-that-currency-amounts-display-with-the-symbol-consistently-across-the-ui",
+      "featureTitle": "After deployment, verify that the AMC tab is visible for authenticated users and that currency amounts display with the ₹ symbol consistently across the UI.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/lib/utils.ts",
+        "frontend/src/pages/Dashboard.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "blob-storage@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

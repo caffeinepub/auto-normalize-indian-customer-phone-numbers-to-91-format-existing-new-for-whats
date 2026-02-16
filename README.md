@@ -1,2 +1,3 @@
-# auto-normalize-indian-customer-phone-numbers-to-91-format-existing-new-for-whats
-Exported from Caffeine project: Deploy a new build (no functional changes)
+## 
+
+To run app build and run docker image: `docker build -t app . docker run -it --network host app`

@@ -1,0 +1,64 @@
+{
+  "kind": "build_request",
+  "title": "Deploy a new build (no functional changes)",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Deploy a new build of the current application state so the latest changes are live/previewable.",
+      "target": "unknown",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Yes\nDeploy a new build"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A new deployment/build is produced from the current codebase state without requiring additional feature changes.",
+        "The newly deployed version is accessible via the standard preview/live URL used by the platform."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "After deployment, verify that the AMC tab is visible for authenticated users and that currency amounts display with the ₹ symbol consistently across the UI.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Deploy a new build"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When logged in, the Dashboard shows an \"AMC\" tab and the AMC screen renders without errors.",
+        "UI-rendered money amounts use ₹ formatting consistently (including dashboards and analytics views)."
+      ]
+    }
+  ],
+  "constraints": [
+    "Use English for any user-facing text.",
+    "Do not modify any files under frontend/immutablePaths (compose UI components instead).",
+    "Respect the single-actor backend architecture (all Motoko logic remains in backend/main.mo)."
+  ],
+  "nonGoals": [
+    "Adding new AMC functionality beyond what is already implemented.",
+    "Changing application features or UI behavior unrelated to deployment verification."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}
