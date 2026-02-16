@@ -1,80 +1,60 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-16T04:02:45.750Z",
-  "summary": "The diff introduces multiple functional/frontend changes and a deployment checklist document, but it does not provide evidence of an actual deployment/build being produced or accessible via a preview/live URL. AMC tab wiring and authentication gating appear present, while ₹ currency consistency is only partially evidenced (utility added, but no proof of adoption across all UI).",
+  "generatedAt": "2026-02-16T18:05:12.376Z",
+  "summary": "Backend types were updated to only expose UPI/Cash and a migration module was added and wired into the actor. Frontend changes appear to adjust AMC-related payment method selectors, but the diff summary does not provide clear evidence that revenue payment-method UI and all breakdown computations/hooks were fully updated beyond type-level changes. Several unrelated frontend behavior/text changes also appear in the summaries.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Deploy a new build of the current application state so the latest changes are live/previewable (new build produced and accessible via the platform preview/live URL).",
-      "reason": "The diff only adds a checklist document and code changes; it does not include any deployment configuration, pipeline change, version bump, or other evidence that a new build was produced and made accessible at a standard preview/live URL.",
+      "id": "REQ-2",
+      "requirement": "Update backend revenue/payment breakdown logic to only track and return UPI and Cash totals, removing all Bank Transfer / Online / Cheque / Other fields from the breakdown type and its computation.",
+      "reason": "The diff shows the PaymentMethodBreakdown type was reduced to {upiPayments, cashPayments}, but the provided backend/main.mo snippet is truncated before any breakdown computation or revenue endpoint implementations, so there is no direct evidence the computation/endpoints no longer calculate/return the removed methods.",
       "evidence": [
-        "frontend/DEPLOYMENT.md"
+        "backend/main.mo"
       ]
     },
     {
-      "id": "REQ-2",
-      "requirement": "UI-rendered money amounts use ₹ formatting consistently across the UI (including dashboards and analytics views).",
-      "reason": "A new formatCurrency() helper using INR/₹ is added, but the diff summary does not show updates to the actual UI components (Dashboard overview cards, Revenue analytics, AMC views, dialogs) to ensure they all use it. Therefore, consistent ₹ usage across the UI is not verifiable from the provided changes.",
+      "id": "REQ-4",
+      "requirement": "Update the Revenue section UI (RevenueAnalyticsTab payment methods view) to display only UPI and Cash, removing any cards/rows/labels for Bank Transfer, Online, Cheque, and Other.",
+      "reason": "RevenueAnalyticsTab.tsx is truncated before the Payment Methods tab content; the diff summary does not show the actual UI rows/cards/labels being reduced to only UPI and Cash or that removed labels are absent.",
       "evidence": [
-        "frontend/src/lib/utils.ts",
-        "frontend-file-summaries.txt"
+        "frontend/src/components/RevenueAnalyticsTab.tsx"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "Update frontend React Query hooks and types that depend on the backend PaymentMethodBreakdown shape to match the new backend response (UPI + Cash only).",
+      "reason": "useQueries.ts is truncated before the payment method breakdown hook implementation; while it imports PaymentMethodBreakdown, the diff summary does not show the hook/result-field access was updated to avoid removed fields (e.g., bankTransfer/online/cheque/other).",
+      "evidence": [
+        "frontend/src/hooks/useQueries.ts"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added 'Deployment Checklist' documentation with verification steps and a 'Build Process' section.",
-      "reason": "The request was to deploy a new build with no functional changes; adding new documentation/checklists was not requested as a deliverable feature.",
+      "description": "Added null-safe customer filtering with try/catch and console warnings in AddAMCContractDialog.",
+      "reason": "Not requested by the BuildRequest, which focuses on removing payment method variants and related UI/backend model updates.",
       "evidence": [
-        "frontend/DEPLOYMENT.md"
+        "frontend/src/components/AddAMCContractDialog.tsx"
       ]
     },
     {
-      "description": "New data persistence validation toast and loading/validation UI messaging in the main app.",
-      "reason": "REQ-1/REQ-2 ask for deployment and verification of AMC tab visibility and ₹ formatting; adding new toast notifications and loading-state messaging changes UI behavior beyond deployment verification.",
-      "evidence": [
-        "frontend/src/App.tsx",
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "DashboardOverview behavior change: 'Due for Service' now shows only customers with service dates in the current month and changes the description text to 'Due this month'.",
-      "reason": "This is a functional/UI behavior change unrelated to deployment verification, which is explicitly a non-goal.",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Customer import phone normalization and other CustomersTab/AddCustomerDialog behavior changes.",
-      "reason": "These are new/changed application behaviors not requested (non-goal: no feature/UI behavior changes unrelated to deployment verification).",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Added/changed hooks: new useAddAMC and useGetUpcomingServices, plus expanded query invalidation behavior.",
-      "reason": "New hooks and backend-operation wiring are functional additions not requested by the deployment-only build request.",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Profile setup modal behavior for first-time user profile creation (name/email) referenced as part of frontend changes.",
-      "reason": "User profile setup is not part of REQ-1/REQ-2 and constitutes additional functionality.",
+      "description": "Dashboard overview behavior/text changes (e.g., 'Due for Service' card showing current-month only, description text changes) and other general UI wiring notes.",
+      "reason": "Explicitly outside the scope of removing payment methods; BuildRequest says not to change unrelated logic beyond what is necessary to remove payment methods.",
       "evidence": [
         "frontend-file-summaries.txt"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/DEPLOYMENT.md",
-    "frontend/src/App.tsx",
-    "frontend/src/lib/utils.ts",
-    "frontend/src/pages/Dashboard.tsx",
+    "frontend/src/components/AddAMCContractDialog.tsx",
+    "frontend/src/components/AddCustomerDialog.tsx",
+    "frontend/src/components/CustomerDetailDialog.tsx",
+    "frontend/src/components/RevenueAnalyticsTab.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]
 }

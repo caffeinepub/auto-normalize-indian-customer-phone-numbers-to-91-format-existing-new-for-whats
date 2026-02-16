@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { Customer, ServiceEntry, Reminder, ImportCustomerData, RevenueByPeriod, CustomerRevenueBreakdown, AMCDetails, AMCServiceEntry, AMCRevenue, PaymentMethodBreakdown } from '../backend';
+import { PaymentStatus, PaymentMethod } from '../backend';
 
 // Admin check query
 export function useIsAdmin() {
@@ -572,6 +573,32 @@ export function useGetCustomerRevenueBreakdown() {
 }
 
 // AMC queries
+export function useGetAllAMCs() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<AMCDetails[]>({
+    queryKey: ['amcs'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllAMCs();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetAMCRevenue() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<AMCRevenue>({
+    queryKey: ['amcRevenue'],
+    queryFn: async () => {
+      if (!actor) return { totalAmount: BigInt(0), inProgressAmount: BigInt(0), completedAmount: BigInt(0), remainingBalance: BigInt(0) };
+      return actor.getAMCRevenue();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
 export function useGetAMCServiceHistory(customerId: bigint) {
   const { actor, isFetching } = useActor();
 
@@ -616,54 +643,21 @@ export function useAddAMCServiceEntry() {
   });
 }
 
-export function useGetAMCRevenue() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<AMCRevenue>({
-    queryKey: ['amcRevenue'],
-    queryFn: async () => {
-      if (!actor) return { totalAmount: BigInt(0), inProgressAmount: BigInt(0), completedAmount: BigInt(0), remainingBalance: BigInt(0) };
-      return actor.getAMCRevenue();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useGetPaymentMethodBreakdown() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<PaymentMethodBreakdown>({
-    queryKey: ['paymentBreakdown'],
-    queryFn: async () => {
-      if (!actor) return {
-        upiPayments: BigInt(0),
-        cashPayments: BigInt(0),
-        bankTransfer: BigInt(0),
-        chequePayments: BigInt(0),
-        onlinePayments: BigInt(0),
-        otherPayments: BigInt(0),
-      };
-      return actor.getPaymentMethodBreakdown();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useAddAMC() {
+export function useAddAmcForCustomers() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: {
-      customerId: bigint;
+      customerIds: bigint[];
       contractType: any;
       amount: bigint;
       startDate: bigint;
       endDate: bigint;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.addAmc(
-        data.customerId,
+      return actor.addAmcForCustomers(
+        data.customerIds,
         data.contractType,
         data.amount,
         data.startDate,
@@ -673,7 +667,40 @@ export function useAddAMC() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['customer'] });
+      queryClient.invalidateQueries({ queryKey: ['amcs'] });
       queryClient.invalidateQueries({ queryKey: ['amcRevenue'] });
     },
+  });
+}
+
+// Payment method breakdown query
+export function useGetPaymentMethodBreakdown() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<PaymentMethodBreakdown>({
+    queryKey: ['paymentBreakdown'],
+    queryFn: async () => {
+      if (!actor) return { upiPayments: BigInt(0), cashPayments: BigInt(0) };
+      return actor.getPaymentMethodBreakdown();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+// Payment method breakdown by period
+export function useGetPaymentMethodBreakdownByPeriod(
+  periodMode: 'monthly' | 'quarterly' | 'yearly',
+  year: bigint,
+  monthOrQuarter?: bigint
+) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<PaymentMethodBreakdown>({
+    queryKey: ['paymentBreakdown', periodMode, year.toString(), monthOrQuarter?.toString()],
+    queryFn: async () => {
+      if (!actor) return { upiPayments: BigInt(0), cashPayments: BigInt(0) };
+      return actor.getPaymentMethodBreakdown();
+    },
+    enabled: !!actor && !isFetching,
   });
 }

@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 import { normalizeIndianMobileToE164 } from '../lib/phoneNormalization';
 import type { AMCDetails } from '../backend';
-import { AMCType } from '../backend';
+import { AMCType, PaymentMethod } from '../backend';
 
 export default function AddCustomerDialog() {
   const [open, setOpen] = useState(false);
@@ -69,7 +69,7 @@ export default function AddCustomerDialog() {
           durationYears: BigInt(durationYears),
           contractStartDate: startDateNanos,
           contractEndDate: endDateNanos,
-          paymentMethod: getAMCPaymentMethodValue(amcPaymentMethod),
+          paymentMethod: amcPaymentMethod as PaymentMethod,
           totalAmount: BigInt(totalAmountInPaise),
           notes: amcNotes.trim(),
           remainingBalance: BigInt(totalAmountInPaise),
@@ -290,10 +290,8 @@ export default function AddCustomerDialog() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="upi">UPI</SelectItem>
                       <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="bankTransfer">Bank Transfer</SelectItem>
-                      <SelectItem value="online">Online</SelectItem>
-                      <SelectItem value="cheque">Cheque</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -349,20 +347,5 @@ function getServiceTypeValue(type: string, otherValue: string): any {
       return { other: otherValue };
     default:
       return { cleaning: null };
-  }
-}
-
-function getAMCPaymentMethodValue(method: string): any {
-  switch (method) {
-    case 'cash':
-      return { cash: null };
-    case 'bankTransfer':
-      return { bankTransfer: null };
-    case 'online':
-      return { online: null };
-    case 'cheque':
-      return { cheque: null };
-    default:
-      return { cash: null };
   }
 }

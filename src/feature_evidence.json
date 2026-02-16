@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-deploy-a-new-build-of-the-current-application-state-so-the-latest-changes-are-live-previewable",
-      "featureTitle": "Deploy a new build of the current application state so the latest changes are live/previewable.",
+      "featureId": "feature-update-the-revenue-section-ui-revenueanalyticstab-payment-methods-view-to-display-only-upi-and-cash-removing-any-cards-rows-labels-for-bank-transfer-online-cheque-and-other",
+      "featureTitle": "Update the Revenue section UI (RevenueAnalyticsTab payment methods view) to display only UPI and Cash, removing any cards/rows/labels for Bank Transfer, Online, Cheque, and Other.",
       "files": [
-        "frontend/DEPLOYMENT.md"
+        "frontend/src/components/RevenueAnalyticsTab.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,17 +17,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-1"
+        "REQ-4"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-after-deployment-verify-that-the-amc-tab-is-visible-for-authenticated-users-and-that-currency-amounts-display-with-the-symbol-consistently-across-the-ui",
-      "featureTitle": "After deployment, verify that the AMC tab is visible for authenticated users and that currency amounts display with the ₹ symbol consistently across the UI.",
+      "featureId": "feature-update-any-other-frontend-payment-method-selectors-or-displays-that-currently-include-bank-transfer-online-cheque-or-other-including-amc-related-payment-method-inputs-so-the-only-available-options-are-upi-and-cash-and-ensure-requests-sent-to-the-backend-use-only-the-supported-variants",
+      "featureTitle": "Update any other frontend payment-method selectors or displays that currently include Bank Transfer, Online, Cheque, or Other (including AMC-related payment method inputs) so the only available options are UPI and Cash, and ensure requests sent to the backend use only the supported variants.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/lib/utils.ts",
-        "frontend/src/pages/Dashboard.tsx"
+        "frontend/src/components/AddCustomerDialog.tsx",
+        "frontend/src/components/CustomerDetailDialog.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -39,7 +38,28 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-2"
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-frontend-react-query-hooks-and-types-that-depend-on-the-backend-paymentmethodbreakdown-shape-to-match-the-new-backend-response-upi-cash-only",
+      "featureTitle": "Update frontend React Query hooks and types that depend on the backend PaymentMethodBreakdown shape to match the new backend response (UPI + Cash only).",
+      "files": [
+        "frontend/src/components/RevenueAnalyticsTab.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "blob-storage@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
       ],
       "confidence": "high"
     }

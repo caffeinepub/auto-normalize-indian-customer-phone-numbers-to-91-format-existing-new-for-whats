@@ -19,7 +19,7 @@ import AMCBadge from './AMCBadge';
 import { normalizeIndianMobileToE164 } from '../lib/phoneNormalization';
 import { getAMCTypeInfo, getContractStatusInfo } from '../lib/amc';
 import type { Customer, PaymentStatus, AMCDetails } from '../backend';
-import { AMCType } from '../backend';
+import { AMCType, PaymentMethod } from '../backend';
 
 interface CustomerDetailDialogProps {
   customer: Customer;
@@ -45,7 +45,7 @@ export default function CustomerDetailDialog({ customer, open, onOpenChange, onD
   const [amcType, setAmcType] = useState<string>(customer.amcDetails?.contractType || 'onlyService');
   const [amcDuration, setAmcDuration] = useState(customer.amcDetails?.durationYears.toString() || '1');
   const [amcStartDate, setAmcStartDate] = useState(customer.amcDetails ? formatDateForInput(customer.amcDetails.contractStartDate) : '');
-  const [amcPaymentMethod, setAmcPaymentMethod] = useState<string>(getAMCPaymentMethodString(customer.amcDetails?.paymentMethod));
+  const [amcPaymentMethod, setAmcPaymentMethod] = useState<string>(customer.amcDetails?.paymentMethod || 'cash');
   const [amcTotalAmount, setAmcTotalAmount] = useState(customer.amcDetails ? (Number(customer.amcDetails.totalAmount) / 100).toString() : '');
   const [amcNotes, setAmcNotes] = useState(customer.amcDetails?.notes || '');
 
@@ -89,7 +89,7 @@ export default function CustomerDetailDialog({ customer, open, onOpenChange, onD
           durationYears: BigInt(durationYears),
           contractStartDate: startDateNanos,
           contractEndDate: endDateNanos,
-          paymentMethod: getAMCPaymentMethodValue(amcPaymentMethod),
+          paymentMethod: amcPaymentMethod as PaymentMethod,
           totalAmount: BigInt(totalAmountInPaise),
           notes: amcNotes.trim(),
           remainingBalance: BigInt(newRemaining),
@@ -133,7 +133,7 @@ export default function CustomerDetailDialog({ customer, open, onOpenChange, onD
     setAmcType(customer.amcDetails?.contractType || 'onlyService');
     setAmcDuration(customer.amcDetails?.durationYears.toString() || '1');
     setAmcStartDate(customer.amcDetails ? formatDateForInput(customer.amcDetails.contractStartDate) : '');
-    setAmcPaymentMethod(getAMCPaymentMethodString(customer.amcDetails?.paymentMethod));
+    setAmcPaymentMethod(customer.amcDetails?.paymentMethod || 'cash');
     setAmcTotalAmount(customer.amcDetails ? (Number(customer.amcDetails.totalAmount) / 100).toString() : '');
     setAmcNotes(customer.amcDetails?.notes || '');
     setIsEditing(false);
@@ -395,17 +395,13 @@ export default function CustomerDetailDialog({ customer, open, onOpenChange, onD
                                 {service.notes && (
                                   <p className="text-sm text-muted-foreground mt-2">{service.notes}</p>
                                 )}
-                              </div>
-                              <div className="text-right">
-                                <p className="text-lg font-semibold">
-                                  {formatCurrency(Number(service.amount))}
-                                </p>
                                 {service.paymentMethod && (
-                                  <p className="text-xs text-muted-foreground capitalize">
-                                    {service.paymentMethod}
+                                  <p className="text-sm text-muted-foreground">
+                                    Payment: {getPaymentMethodDisplay(service.paymentMethod)}
                                   </p>
                                 )}
                               </div>
+                              <p className="text-lg font-semibold">{formatCurrency(Number(service.amount))}</p>
                             </div>
                           </CardContent>
                         </Card>
@@ -429,13 +425,99 @@ export default function CustomerDetailDialog({ customer, open, onOpenChange, onD
                 </div>
               )}
 
-              {hasAMC || customer.amcDetails ? (
-                <div className="space-y-4">
-                  {hasAMC && isEditing ? (
+              {!hasAMC && !customer.amcDetails ? (
+                <Card className="bg-muted/50">
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-muted-foreground text-center">No AMC contract for this customer</p>
+                  </CardContent>
+                </Card>
+              ) : hasAMC || customer.amcDetails ? (
+                <>
+                  {!isEditing && customer.amcDetails && (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium">Contract Type</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <AMCBadge type={customer.amcDetails.contractType} />
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium">Total Amount</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-2xl font-bold">{formatCurrency(Number(customer.amcDetails.totalAmount) / 100)}</p>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium">Remaining Balance</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                            {formatCurrency(Number(customer.amcDetails.remainingBalance) / 100)}
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium">Duration</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-lg font-semibold">{Number(customer.amcDetails.durationYears)} Year{Number(customer.amcDetails.durationYears) !== 1 ? 's' : ''}</p>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium">Start Date</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm font-medium">{formatDate(customer.amcDetails.contractStartDate)}</p>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium">End Date</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm font-medium">{formatDate(customer.amcDetails.contractEndDate)}</p>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium">Payment Method</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm font-medium">{getPaymentMethodDisplay(customer.amcDetails.paymentMethod)}</p>
+                        </CardContent>
+                      </Card>
+
+                      {customer.amcDetails.notes && (
+                        <Card className="md:col-span-2">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium">Notes</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm">{customer.amcDetails.notes}</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {isEditing && (
                     <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
                       <div className="space-y-2">
-                        <Label htmlFor="edit-amcType">AMC Contract Type</Label>
-                        <Select value={amcType} onValueChange={setAmcType} disabled={!isEditing}>
+                        <Label htmlFor="edit-amcType">AMC Contract Type *</Label>
+                        <Select value={amcType} onValueChange={setAmcType}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -449,8 +531,8 @@ export default function CustomerDetailDialog({ customer, open, onOpenChange, onD
 
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                          <Label htmlFor="edit-amcDuration">Contract Duration (Years)</Label>
-                          <Select value={amcDuration} onValueChange={setAmcDuration} disabled={!isEditing}>
+                          <Label htmlFor="edit-amcDuration">Contract Duration (Years) *</Label>
+                          <Select value={amcDuration} onValueChange={setAmcDuration}>
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
@@ -464,42 +546,39 @@ export default function CustomerDetailDialog({ customer, open, onOpenChange, onD
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="edit-amcStartDate">Contract Start Date</Label>
+                          <Label htmlFor="edit-amcStartDate">Contract Start Date *</Label>
                           <Input
                             id="edit-amcStartDate"
                             type="date"
                             value={amcStartDate}
                             onChange={(e) => setAmcStartDate(e.target.value)}
-                            disabled={!isEditing}
                           />
                         </div>
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                          <Label htmlFor="edit-amcPaymentMethod">Payment Method</Label>
-                          <Select value={amcPaymentMethod} onValueChange={setAmcPaymentMethod} disabled={!isEditing}>
+                          <Label htmlFor="edit-amcPaymentMethod">Payment Method *</Label>
+                          <Select value={amcPaymentMethod} onValueChange={setAmcPaymentMethod}>
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="upi">UPI</SelectItem>
                               <SelectItem value="cash">Cash</SelectItem>
-                              <SelectItem value="bankTransfer">Bank Transfer</SelectItem>
-                              <SelectItem value="online">Online</SelectItem>
-                              <SelectItem value="cheque">Cheque</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="edit-amcTotalAmount">Total Amount (₹)</Label>
+                          <Label htmlFor="edit-amcTotalAmount">Total Amount (₹) *</Label>
                           <Input
                             id="edit-amcTotalAmount"
                             type="number"
                             step="0.01"
+                            placeholder="e.g., 5000"
                             value={amcTotalAmount}
                             onChange={(e) => setAmcTotalAmount(e.target.value)}
-                            disabled={!isEditing}
                           />
                         </div>
                       </div>
@@ -508,95 +587,15 @@ export default function CustomerDetailDialog({ customer, open, onOpenChange, onD
                         <Label htmlFor="edit-amcNotes">Contract Notes</Label>
                         <Input
                           id="edit-amcNotes"
+                          placeholder="Additional contract details..."
                           value={amcNotes}
                           onChange={(e) => setAmcNotes(e.target.value)}
-                          disabled={!isEditing}
                         />
                       </div>
                     </div>
-                  ) : customer.amcDetails ? (
-                    <div className="space-y-4">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            AMC Contract Details
-                            <AMCBadge type={customer.amcDetails.contractType} />
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div>
-                              <p className="text-sm text-muted-foreground">Duration</p>
-                              <p className="font-medium">{customer.amcDetails.durationYears.toString()} Year(s)</p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-muted-foreground">Payment Method</p>
-                              <p className="font-medium capitalize">{getAMCPaymentMethodDisplay(customer.amcDetails.paymentMethod)}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-muted-foreground">Start Date</p>
-                              <p className="font-medium">{formatDate(customer.amcDetails.contractStartDate)}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-muted-foreground">End Date</p>
-                              <p className="font-medium">{formatDate(customer.amcDetails.contractEndDate)}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-muted-foreground">Total Amount</p>
-                              <p className="font-medium text-lg">{formatCurrency(Number(customer.amcDetails.totalAmount))}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-muted-foreground">Remaining Balance</p>
-                              <p className="font-medium text-lg text-orange-600">{formatCurrency(Number(customer.amcDetails.remainingBalance))}</p>
-                            </div>
-                          </div>
-                          {customer.amcDetails.notes && (
-                            <div>
-                              <p className="text-sm text-muted-foreground">Notes</p>
-                              <p className="text-sm">{customer.amcDetails.notes}</p>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-
-                      <div className="grid gap-4 md:grid-cols-3">
-                        <Card>
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium">AMC Services</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-2xl font-bold">{amcServiceHistory.length}</p>
-                          </CardContent>
-                        </Card>
-                        <Card>
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium">Parts Replaced</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-2xl font-bold">{amcPartsReplacementCount}</p>
-                          </CardContent>
-                        </Card>
-                        <Card>
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium">Paid Amount</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-2xl font-bold text-green-600">
-                              {formatCurrency(Number(customer.amcDetails.totalAmount - customer.amcDetails.remainingBalance))}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              ) : (
-                <Card className="bg-muted/50">
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground text-center">No AMC contract for this customer</p>
-                  </CardContent>
-                </Card>
-              )}
+                  )}
+                </>
+              ) : null}
             </TabsContent>
 
             <TabsContent value="amcHistory" className="space-y-4">
@@ -625,86 +624,131 @@ export default function CustomerDetailDialog({ customer, open, onOpenChange, onD
                   </CardContent>
                 </Card>
               ) : (
-                <div className="space-y-3">
-                  {amcServiceHistory
-                    .sort((a, b) => Number(b.serviceDate - a.serviceDate))
-                    .map((service) => (
-                      <Card key={service.amcServiceId.toString()}>
-                        <CardContent className="pt-6">
-                          <div className="space-y-3">
-                            <div className="flex items-start justify-between">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <p className="font-medium">AMC Service</p>
+                <>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">Total Services</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-2xl font-bold">{amcServiceHistory.length}</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">Parts Replaced</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-2xl font-bold">{amcPartsReplacementCount}</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">Follow-ups Needed</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-2xl font-bold">
+                          {amcServiceHistory.filter(s => s.followUpNeeded).length}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="space-y-3">
+                    {amcServiceHistory
+                      .sort((a, b) => Number(b.serviceDate - a.serviceDate))
+                      .map((service) => {
+                        const statusInfo = getContractStatusInfo(service.contractStatus);
+                        return (
+                          <Card key={service.amcServiceId.toString()}>
+                            <CardContent className="pt-6">
+                              <div className="space-y-3">
+                                <div className="flex items-start justify-between">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium">AMC Service #{Number(service.amcServiceId)}</p>
+                                      <Badge variant={statusInfo.variant}>
+                                        {statusInfo.label}
+                                      </Badge>
+                                      {service.followUpNeeded && (
+                                        <Badge variant="destructive">Follow-up Needed</Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                      {formatDate(service.serviceDate)}
+                                    </p>
+                                  </div>
                                   <AMCBadge type={service.contractType} />
-                                  <Badge variant={getContractStatusInfo(service.contractStatus).variant}>
-                                    {getContractStatusInfo(service.contractStatus).label}
-                                  </Badge>
-                                  {service.followUpNeeded && (
-                                    <Badge variant="secondary">Follow-up Needed</Badge>
-                                  )}
                                 </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {formatDate(service.serviceDate)}
-                                </p>
+
+                                {service.partsReplaced && (
+                                  <div>
+                                    <p className="text-sm font-medium">Parts Replaced:</p>
+                                    <p className="text-sm text-muted-foreground">{service.partsReplaced}</p>
+                                  </div>
+                                )}
+
+                                {service.priceReduction && (
+                                  <div className="p-3 bg-muted rounded-lg">
+                                    <p className="text-sm font-medium mb-1">Price Reduction Applied</p>
+                                    <div className="text-sm text-muted-foreground space-y-1">
+                                      <p>Part: {service.priceReduction.partsName}</p>
+                                      <p>Regular Price: {service.priceReduction.regularPrice}</p>
+                                      <p>Discount Price: {service.priceReduction.discountPrice}</p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {service.notes && (
+                                  <div>
+                                    <p className="text-sm font-medium">Notes:</p>
+                                    <p className="text-sm text-muted-foreground">{service.notes}</p>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                            {service.partsReplaced && (
-                              <div>
-                                <p className="text-sm font-medium">Parts Replaced:</p>
-                                <p className="text-sm text-muted-foreground">{service.partsReplaced}</p>
-                              </div>
-                            )}
-                            {service.notes && (
-                              <div>
-                                <p className="text-sm font-medium">Notes:</p>
-                                <p className="text-sm text-muted-foreground">{service.notes}</p>
-                              </div>
-                            )}
-                            {service.priceReduction && (
-                              <div className="p-3 bg-muted rounded-lg">
-                                <p className="text-sm font-medium">Price Reduction Applied:</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {service.priceReduction.partsName}: {service.priceReduction.regularPrice} → {service.priceReduction.discountPrice}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                  </div>
+                </>
               )}
             </TabsContent>
           </Tabs>
         </DialogContent>
       </Dialog>
 
-      <AddServiceEntryDialog
-        customerId={customer.id}
-        open={showAddService}
-        onOpenChange={setShowAddService}
-      />
+      {showAddService && (
+        <AddServiceEntryDialog
+          customerId={customer.id}
+          open={showAddService}
+          onOpenChange={setShowAddService}
+        />
+      )}
 
-      <AddAMCServiceEntryDialog
-        customerId={customer.id}
-        open={showAddAMCService}
-        onOpenChange={setShowAddAMCService}
-      />
+      {showAddAMCService && (
+        <AddAMCServiceEntryDialog
+          customerId={customer.id}
+          open={showAddAMCService}
+          onOpenChange={setShowAddAMCService}
+        />
+      )}
     </>
   );
 }
 
 function getServiceTypeString(serviceType: any): string {
-  if (serviceType.cleaning !== undefined) return 'cleaning';
-  if (serviceType.maintenance !== undefined) return 'maintenance';
-  if (serviceType.repair !== undefined) return 'repair';
-  if (serviceType.other !== undefined) return 'other';
+  if ('cleaning' in serviceType) return 'cleaning';
+  if ('maintenance' in serviceType) return 'maintenance';
+  if ('repair' in serviceType) return 'repair';
+  if ('other' in serviceType) return 'other';
   return 'cleaning';
 }
 
 function getOtherServiceType(serviceType: any): string {
-  if (serviceType.other !== undefined) return serviceType.other;
+  if ('other' in serviceType) return serviceType.other;
   return '';
 }
 
@@ -723,83 +767,49 @@ function getServiceTypeValue(type: string, otherValue: string): any {
   }
 }
 
-function formatDateForInput(nanos: bigint): string {
-  const date = new Date(Number(nanos / BigInt(1_000_000)));
-  return date.toISOString().split('T')[0];
+function getServiceTypeDisplay(serviceType: any): string {
+  if ('cleaning' in serviceType) return 'Cleaning';
+  if ('maintenance' in serviceType) return 'Maintenance';
+  if ('repair' in serviceType) return 'Repair';
+  if ('other' in serviceType) return serviceType.other;
+  return 'Unknown';
 }
 
-function getServiceTypeDisplay(serviceType: any): string {
-  if (serviceType.cleaning !== undefined) return 'Cleaning';
-  if (serviceType.maintenance !== undefined) return 'Maintenance';
-  if (serviceType.repair !== undefined) return 'Repair';
-  if (serviceType.other !== undefined) return serviceType.other;
+function getPaymentStatusDisplay(status: PaymentStatus): string {
+  const statusStr = status as any;
+  if (statusStr === 'paid' || statusStr.__kind__ === 'paid') return 'Paid';
+  if (statusStr === 'unpaid' || statusStr.__kind__ === 'unpaid') return 'Unpaid';
+  if (statusStr === 'free' || statusStr.__kind__ === 'free') return 'Free';
+  return 'Unknown';
+}
+
+function getPaymentStatusVariant(status: PaymentStatus): 'default' | 'secondary' | 'destructive' {
+  const statusStr = status as any;
+  if (statusStr === 'paid' || statusStr.__kind__ === 'paid') return 'default';
+  if (statusStr === 'unpaid' || statusStr.__kind__ === 'unpaid') return 'destructive';
+  if (statusStr === 'free' || statusStr.__kind__ === 'free') return 'secondary';
+  return 'secondary';
+}
+
+function getPaymentMethodDisplay(method: any): string {
+  if (!method) return 'Not specified';
+  const methodStr = method as any;
+  if (methodStr === 'upi' || methodStr.__kind__ === 'upi') return 'UPI';
+  if (methodStr === 'cash' || methodStr.__kind__ === 'cash') return 'Cash';
   return 'Unknown';
 }
 
 function isPaymentStatusPaid(status: PaymentStatus): boolean {
-  return status === 'paid';
+  const statusStr = status as any;
+  return statusStr === 'paid' || statusStr.__kind__ === 'paid';
 }
 
 function isPaymentStatusUnpaid(status: PaymentStatus): boolean {
-  return status === 'unpaid';
+  const statusStr = status as any;
+  return statusStr === 'unpaid' || statusStr.__kind__ === 'unpaid';
 }
 
-function getPaymentStatusDisplay(status: PaymentStatus): string {
-  switch (status) {
-    case 'paid':
-      return 'Paid';
-    case 'unpaid':
-      return 'Unpaid';
-    case 'free':
-      return 'Free';
-    default:
-      return 'Unknown';
-  }
-}
-
-function getPaymentStatusVariant(status: PaymentStatus): 'default' | 'secondary' | 'destructive' {
-  switch (status) {
-    case 'paid':
-      return 'default';
-    case 'unpaid':
-      return 'destructive';
-    case 'free':
-      return 'secondary';
-    default:
-      return 'secondary';
-  }
-}
-
-function getAMCPaymentMethodString(method: any): string {
-  if (!method) return 'cash';
-  if (method.cash !== undefined) return 'cash';
-  if (method.bankTransfer !== undefined) return 'bankTransfer';
-  if (method.online !== undefined) return 'online';
-  if (method.cheque !== undefined) return 'cheque';
-  if (method.other !== undefined) return 'other';
-  return 'cash';
-}
-
-function getAMCPaymentMethodValue(method: string): any {
-  switch (method) {
-    case 'cash':
-      return { cash: null };
-    case 'bankTransfer':
-      return { bankTransfer: null };
-    case 'online':
-      return { online: null };
-    case 'cheque':
-      return { cheque: null };
-    default:
-      return { cash: null };
-  }
-}
-
-function getAMCPaymentMethodDisplay(method: any): string {
-  if (method.cash !== undefined) return 'Cash';
-  if (method.bankTransfer !== undefined) return 'Bank Transfer';
-  if (method.online !== undefined) return 'Online';
-  if (method.cheque !== undefined) return 'Cheque';
-  if (method.other !== undefined) return method.other;
-  return 'Unknown';
+function formatDateForInput(nanos: bigint): string {
+  const date = new Date(Number(nanos) / 1_000_000);
+  return date.toISOString().split('T')[0];
 }

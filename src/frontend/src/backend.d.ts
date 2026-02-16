@@ -34,34 +34,14 @@ export type ServiceType = {
 };
 export type Time = bigint;
 export interface PaymentMethodBreakdown {
-    otherPayments: bigint;
     cashPayments: bigint;
-    bankTransfer: bigint;
     upiPayments: bigint;
-    chequePayments: bigint;
-    onlinePayments: bigint;
 }
 export interface ImportResult {
     errors: Array<string>;
     successCount: bigint;
     failureCount: bigint;
 }
-export type AMCPaymentMethod = {
-    __kind__: "other";
-    other: string;
-} | {
-    __kind__: "cash";
-    cash: null;
-} | {
-    __kind__: "bankTransfer";
-    bankTransfer: null;
-} | {
-    __kind__: "cheque";
-    cheque: null;
-} | {
-    __kind__: "online";
-    online: null;
-};
 export interface Customer {
     id: bigint;
     amcServices: Array<AMCServiceEntry>;
@@ -106,7 +86,7 @@ export interface ImportCustomerData {
 }
 export interface AMCDetails {
     id: bigint;
-    paymentMethod: AMCPaymentMethod;
+    paymentMethod: PaymentMethod;
     durationYears: bigint;
     contractType: AMCType;
     contractEndDate: Time;
@@ -182,7 +162,7 @@ export interface backendInterface {
         discountPrice: string;
         regularPrice: string;
     } | null): Promise<AMCServiceEntry>;
-    addAmc(customerId: bigint, contractType: AMCType, amount: bigint, startDate: Time, endDate: Time): Promise<void>;
+    addAmcForCustomers(customerIds: Array<bigint>, contractType: AMCType, amount: bigint, startDate: Time, endDate: Time): Promise<void>;
     addCustomer(name: string, contact: string, serviceType: ServiceType, installationDate: Time, serviceInterval: bigint, amcDetails: AMCDetails | null, brand: string, model: string): Promise<Customer>;
     addReminder(customerId: bigint, reminderDate: Time, description: string): Promise<Reminder>;
     addServiceEntry(customerId: bigint, serviceDate: Time, serviceType: ServiceType, amount: bigint, paymentStatus: PaymentStatus, paymentMethod: PaymentMethod | null, notes: string, isFree: boolean): Promise<ServiceEntry>;

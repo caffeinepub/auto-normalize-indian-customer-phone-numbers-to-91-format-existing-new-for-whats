@@ -1,30 +1,69 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
+  "summary": "Revenue section configuration update: payment methods should only include UPI and CASH, removing all other methods across the app/backend.",
   "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-deploy-a-new-build-of-the-current-application-state-so-the-latest-changes-are-live-previewable",
-      "title": "Deploy a new build of the current application state so the latest changes are live/previewable.",
+      "id": "feature-update-the-revenue-section-ui-revenueanalyticstab-payment-methods-view-to-display-only-upi-and-cash-removing-any-cards-rows-labels-for-bank-transfer-online-cheque-and-other",
+      "title": "Update the Revenue section UI (RevenueAnalyticsTab payment methods view) to display only UPI and Cash, removing any cards/rows/labels for Bank Transfer, Online, Cheque, and Other.",
       "reqIds": [
-        "REQ-1"
+        "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-after-deployment-verify-that-the-amc-tab-is-visible-for-authenticated-users-and-that-currency-amounts-display-with-the-symbol-consistently-across-the-ui",
-      "title": "After deployment, verify that the AMC tab is visible for authenticated users and that currency amounts display with the ₹ symbol consistently across the UI.",
+      "id": "feature-update-any-other-frontend-payment-method-selectors-or-displays-that-currently-include-bank-transfer-online-cheque-or-other-including-amc-related-payment-method-inputs-so-the-only-available-options-are-upi-and-cash-and-ensure-requests-sent-to-the-backend-use-only-the-supported-variants",
+      "title": "Update any other frontend payment-method selectors or displays that currently include Bank Transfer, Online, Cheque, or Other (including AMC-related payment method inputs) so the only available options are UPI and Cash, and ensure requests sent to the backend use only the supported variants.",
       "reqIds": [
-        "REQ-2"
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-react-query-hooks-and-types-that-depend-on-the-backend-paymentmethodbreakdown-shape-to-match-the-new-backend-response-upi-cash-only",
+      "title": "Update frontend React Query hooks and types that depend on the backend PaymentMethodBreakdown shape to match the new backend response (UPI + Cash only).",
+      "reqIds": [
+        "REQ-6"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Deploy a new build (no functional changes)",
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Remove Bank Transfer, Online, Cheque, and Other payment methods from the revenue section/payment methods so only UPI and CASH remain, and remove these methods everywhere (UI and backend/data model).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Update the backend payment method data model so that only UPI and Cash are supported everywhere, removing Bank Transfer, Online, Cheque, and Other variants from all relevant types and APIs.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Update backend revenue/payment breakdown logic to only track and return UPI and Cash totals, removing all Bank Transfer / Online / Cheque / Other fields from the breakdown type and its computation.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Implement a state migration (conditional upgrade) so that any existing stored records using removed payment methods are converted to a supported method (UPI or Cash) during upgrade, preventing runtime traps or decode failures after deploying the new candid interface.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Service Revenue",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

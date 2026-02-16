@@ -11,9 +11,9 @@ import Principal "mo:core/Principal";
 import MixinStorage "blob-storage/Mixin";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+import Migration "migration";
 
-
-
+(with migration = Migration.run)
 actor {
   include MixinStorage();
 
@@ -28,21 +28,13 @@ actor {
     #serviceWithParts50;
   };
 
-  type AMCPaymentMethod = {
-    #cash;
-    #bankTransfer;
-    #online;
-    #cheque;
-    #other : Text;
-  };
-
   type AMCDetails = {
     id : Nat;
     contractType : AMCType;
     durationYears : Nat;
     contractStartDate : Time.Time;
     contractEndDate : Time.Time;
-    paymentMethod : AMCPaymentMethod;
+    paymentMethod : PaymentMethod;
     totalAmount : Nat;
     notes : Text;
     remainingBalance : Nat;
@@ -56,12 +48,7 @@ actor {
     owner : Principal;
   };
 
-  type ContractStatus = { 
-    #active; 
-    #expired; 
-    #pendingRenewal; 
-  };
-
+  type ContractStatus = { #active; #expired; #pendingRenewal };
   type AMCServiceEntry = {
     amcServiceId : Nat;
     customerServiceId : Nat;
@@ -71,7 +58,11 @@ actor {
     partsReplaced : Text;
     notes : Text;
     followUpNeeded : Bool;
-    priceReduction : ?{ partsName : Text; regularPrice : Text; discountPrice : Text };
+    priceReduction : ?{
+      partsName : Text;
+      regularPrice : Text;
+      discountPrice : Text;
+    };
   };
 
   type Reminder = {
@@ -155,10 +146,6 @@ actor {
   type PaymentMethodBreakdown = {
     upiPayments : Nat;
     cashPayments : Nat;
-    bankTransfer : Nat;
-    chequePayments : Nat;
-    onlinePayments : Nat;
-    otherPayments : Nat;
   };
 
   public type AMCDuration = {
@@ -392,10 +379,6 @@ actor {
 
     var upiPayments = 0;
     var cashPayments = 0;
-    var bankTransfer = 0;
-    var chequePayments = 0;
-    var onlinePayments = 0;
-    var otherPayments = 0;
 
     for ((_, service) in servicesMap.entries()) {
       if ((isAdmin or service.owner == caller) and service.paymentStatus == #paid) {
@@ -411,13 +394,14 @@ actor {
       if (isAdmin or customer.owner == caller) {
         switch (customer.amcDetails) {
           case (?amc) {
-            let paidAmount = amc.totalAmount - amc.remainingBalance;
+            let paidAmount = if (amc.totalAmount >= amc.remainingBalance) {
+              amc.totalAmount - amc.remainingBalance;
+            } else {
+              0;
+            };
             switch (amc.paymentMethod) {
               case (#cash) { cashPayments += paidAmount };
-              case (#bankTransfer) { bankTransfer += paidAmount };
-              case (#online) { onlinePayments += paidAmount };
-              case (#cheque) { chequePayments += paidAmount };
-              case (#other(_)) { otherPayments += paidAmount };
+              case (#upi) { upiPayments += paidAmount };
             };
           };
           case (null) {};
@@ -428,10 +412,6 @@ actor {
     {
       upiPayments;
       cashPayments;
-      bankTransfer;
-      chequePayments;
-      onlinePayments;
-      otherPayments;
     };
   };
 
@@ -833,38 +813,41 @@ actor {
     updated;
   };
 
-  public shared ({ caller }) func addAmc(
-    customerId : Nat,
+  public shared ({ caller }) func addAmcForCustomers(
+    customerIds : [Nat],
     contractType : AMCType,
     amount : Nat,
     startDate : Time.Time,
-    endDate : Time.Time,
+    endDate : Time.Time
   ) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can add AMCs");
     };
 
-    let customer = switch (customersMap.get(customerId)) {
-      case (null) { Runtime.trap("Customer not found") };
-      case (?c) { c };
+    for (id in customerIds.vals()) {
+      switch (customersMap.get(id)) {
+        case (null) {
+          Runtime.trap("Customer with id " # id.toText() # " not found");
+        };
+        case (?customer) {
+          if (not checkAuthorization(caller, customer.owner)) {
+            Runtime.trap("Unauthorized: Can only add AMCs for your own customers");
+          };
+
+          let newAmc : AMCContract = {
+            startDate;
+            endDate;
+            contractType;
+            amount;
+            owner = caller;
+          };
+
+          let updatedContracts = customer.amcContracts.concat([newAmc]);
+          let updatedCustomer = { customer with amcContracts = updatedContracts };
+          customersMap.add(id, updatedCustomer);
+        };
+      };
     };
-
-    if (not checkAuthorization(caller, customer.owner)) {
-      Runtime.trap("Unauthorized: Can only add AMCs for your own customers");
-    };
-
-    let newAmc : AMCContract = {
-      startDate;
-      endDate;
-      contractType;
-      amount;
-      owner = caller;
-    };
-
-    let updatedContracts = customer.amcContracts.concat([newAmc]);
-    let updatedCustomer = { customer with amcContracts = updatedContracts };
-
-    customersMap.add(customerId, updatedCustomer);
   };
 
   public shared ({ caller }) func addReminder(
@@ -1131,6 +1114,34 @@ actor {
     calculateRevenue(services);
   };
 
+  func isMonthInQuarter(month : Nat, quarter : Nat) : Bool {
+    switch (quarter, month) {
+      // Q4 Fiscal Year (Jan-Mar)
+      case (4, 1) { true };
+      case (4, 2) { true };
+      case (4, 3) { true };
+      // Q1 Fiscal Year (Apr-Jun)
+      case (1, 4) { true };
+      case (1, 5) { true };
+      case (1, 6) { true };
+      // Q2 (Jul-Sep)
+      case (2, 7) { true };
+      case (2, 8) { true };
+      case (2, 9) { true };
+      // Q3 (Oct-Dec)
+      case (3, 10) { true };
+      case (3, 11) { true };
+      case (3, 12) { true };
+      case (_) { false };
+    };
+  };
+
+  func isInFiscalQuarter(time : Time.Time, year : Nat, quarter : Nat) : Bool {
+    let (serviceYear, serviceMonth) = getYearMonth(time);
+    if (serviceYear != year) { return false };
+    isMonthInQuarter(serviceMonth, quarter);
+  };
+
   public query ({ caller }) func getRevenueByQuarter(year : Nat, quarter : Nat) : async RevenueByPeriod {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view revenue analytics");
@@ -1139,7 +1150,7 @@ actor {
 
     let services = servicesMap.values().toArray().filter(
       func(entry) {
-        (isAdmin or entry.owner == caller) and isInQuarter(entry.serviceDate, year, quarter)
+        (isAdmin or entry.owner == caller) and isInFiscalQuarter(entry.serviceDate, year, quarter)
       }
     );
 
@@ -1331,15 +1342,6 @@ actor {
     serviceYear == year and serviceMonth == month;
   };
 
-  func isInQuarter(time : Time.Time, year : Nat, quarter : Nat) : Bool {
-    let (serviceYear, serviceMonth) = getYearMonth(time);
-    if (serviceYear != year) { return false };
-
-    let startMonth = ((quarter - 1) * 3) + 1;
-    let endMonth = quarter * 3;
-    serviceMonth >= startMonth and serviceMonth <= endMonth;
-  };
-
   func isInYear(time : Time.Time, year : Nat) : Bool {
     let (serviceYear, _) = getYearMonth(time);
     serviceYear == year;
@@ -1366,4 +1368,3 @@ actor {
     };
   };
 };
-

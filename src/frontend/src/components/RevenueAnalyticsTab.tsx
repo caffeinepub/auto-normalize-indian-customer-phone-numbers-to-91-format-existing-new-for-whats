@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useGetRevenueByMonth, useGetRevenueByQuarter, useGetRevenueByYear, useGetCustomerRevenueBreakdown, useGetAMCRevenue, useGetPaymentMethodBreakdown } from '../hooks/useQueries';
+import { useGetRevenueByMonth, useGetRevenueByQuarter, useGetRevenueByYear, useGetCustomerRevenueBreakdown, useGetAMCRevenue, useGetPaymentMethodBreakdownByPeriod } from '../hooks/useQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,6 +11,8 @@ import { getCurrentFYQuarter, getFYQuarterLabel, FY_QUARTERS } from '../lib/fyQu
 import { getAMCTypeInfo } from '../lib/amc';
 import { TrendingUp, Users, Gift, Wallet, CreditCard, Banknote } from 'lucide-react';
 
+type PeriodMode = 'monthly' | 'quarterly' | 'yearly';
+
 export default function RevenueAnalyticsTab() {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -20,12 +22,22 @@ export default function RevenueAnalyticsTab() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedQuarter, setSelectedQuarter] = useState(currentQuarter);
 
+  const [paymentPeriodMode, setPaymentPeriodMode] = useState<PeriodMode>('yearly');
+  const [paymentYear, setPaymentYear] = useState(currentYear);
+  const [paymentMonth, setPaymentMonth] = useState(currentMonth);
+  const [paymentQuarter, setPaymentQuarter] = useState(currentQuarter);
+
   const { data: monthlyRevenue, isLoading: monthlyLoading } = useGetRevenueByMonth(BigInt(selectedYear), BigInt(selectedMonth));
   const { data: quarterlyRevenue, isLoading: quarterlyLoading } = useGetRevenueByQuarter(BigInt(selectedYear), BigInt(selectedQuarter));
   const { data: yearlyRevenue, isLoading: yearlyLoading } = useGetRevenueByYear(BigInt(selectedYear));
   const { data: customerBreakdown = [], isLoading: breakdownLoading } = useGetCustomerRevenueBreakdown();
   const { data: amcRevenue, isLoading: amcLoading } = useGetAMCRevenue();
-  const { data: paymentBreakdown, isLoading: paymentLoading } = useGetPaymentMethodBreakdown();
+  
+  const { data: paymentBreakdown, isLoading: paymentLoading } = useGetPaymentMethodBreakdownByPeriod(
+    paymentPeriodMode,
+    BigInt(paymentYear),
+    paymentPeriodMode === 'monthly' ? BigInt(paymentMonth) : paymentPeriodMode === 'quarterly' ? BigInt(paymentQuarter) : undefined
+  );
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
   const months = [
@@ -43,7 +55,7 @@ export default function RevenueAnalyticsTab() {
     { value: 12, label: 'December' },
   ];
 
-  if (monthlyLoading || quarterlyLoading || yearlyLoading || breakdownLoading || amcLoading || paymentLoading) {
+  if (monthlyLoading || quarterlyLoading || yearlyLoading || breakdownLoading || amcLoading) {
     return (
       <div className="space-y-6">
         <Card>
@@ -242,89 +254,102 @@ export default function RevenueAnalyticsTab() {
         <TabsContent value="payment" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Payment Method Breakdown</CardTitle>
-              <CardDescription>Revenue distribution by payment method</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <CreditCard className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="font-medium">UPI</p>
-                      <p className="text-sm text-muted-foreground">Digital payments</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold">{formatCurrency(Number(paymentBreakdown?.upiPayments || 0))}</p>
-                  </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Payment Method Breakdown</CardTitle>
+                  <CardDescription>Revenue distribution by payment method</CardDescription>
                 </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Banknote className="h-5 w-5 text-green-600" />
-                    <div>
-                      <p className="font-medium">Cash</p>
-                      <p className="text-sm text-muted-foreground">Cash payments</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold">{formatCurrency(Number(paymentBreakdown?.cashPayments || 0))}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Wallet className="h-5 w-5 text-purple-600" />
-                    <div>
-                      <p className="font-medium">Bank Transfer</p>
-                      <p className="text-sm text-muted-foreground">Direct bank transfers</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold">{formatCurrency(Number(paymentBreakdown?.bankTransfer || 0))}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <CreditCard className="h-5 w-5 text-orange-600" />
-                    <div>
-                      <p className="font-medium">Online</p>
-                      <p className="text-sm text-muted-foreground">Online payments</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold">{formatCurrency(Number(paymentBreakdown?.onlinePayments || 0))}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Banknote className="h-5 w-5 text-yellow-600" />
-                    <div>
-                      <p className="font-medium">Cheque</p>
-                      <p className="text-sm text-muted-foreground">Cheque payments</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold">{formatCurrency(Number(paymentBreakdown?.chequePayments || 0))}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Wallet className="h-5 w-5 text-gray-600" />
-                    <div>
-                      <p className="font-medium">Other</p>
-                      <p className="text-sm text-muted-foreground">Other payment methods</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold">{formatCurrency(Number(paymentBreakdown?.otherPayments || 0))}</p>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Tabs value={paymentPeriodMode} onValueChange={(v) => setPaymentPeriodMode(v as PeriodMode)}>
+                    <TabsList>
+                      <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                      <TabsTrigger value="quarterly">Quarterly</TabsTrigger>
+                      <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                 </div>
               </div>
+              <div className="flex items-center gap-2 mt-4">
+                <Select value={paymentYear.toString()} onValueChange={(v) => setPaymentYear(parseInt(v))}>
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {paymentPeriodMode === 'monthly' && (
+                  <Select value={paymentMonth.toString()} onValueChange={(v) => setPaymentMonth(parseInt(v))}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {months.map((month) => (
+                        <SelectItem key={month.value} value={month.value.toString()}>
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {paymentPeriodMode === 'quarterly' && (
+                  <Select value={paymentQuarter.toString()} onValueChange={(v) => setPaymentQuarter(parseInt(v))}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FY_QUARTERS.map((q) => (
+                        <SelectItem key={q.quarter} value={q.quarter.toString()}>
+                          {q.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {paymentLoading ? (
+                <div className="space-y-4">
+                  {[1, 2].map((i) => (
+                    <Skeleton key={i} className="h-20 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium">UPI</p>
+                        <p className="text-sm text-muted-foreground">Digital payments</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold">{formatCurrency(Number(paymentBreakdown?.upiPayments || 0))}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Banknote className="h-5 w-5 text-green-600" />
+                      <div>
+                        <p className="font-medium">Cash</p>
+                        <p className="text-sm text-muted-foreground">Cash payments</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold">{formatCurrency(Number(paymentBreakdown?.cashPayments || 0))}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -333,21 +358,27 @@ export default function RevenueAnalyticsTab() {
           <Card>
             <CardHeader>
               <CardTitle>Customer Revenue Breakdown</CardTitle>
-              <CardDescription>Revenue and service statistics per customer (last 12 months)</CardDescription>
+              <CardDescription>Revenue contribution by customer (last 12 months)</CardDescription>
             </CardHeader>
             <CardContent>
-              {customerBreakdown.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">No customer revenue data available</p>
+              {breakdownLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : customerBreakdown.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No revenue data available</p>
               ) : (
-                <div className="rounded-md border">
+                <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Customer</TableHead>
-                        <TableHead>AMC Type</TableHead>
-                        <TableHead className="text-right">Paid Services</TableHead>
-                        <TableHead className="text-right">Free Services</TableHead>
+                        <TableHead className="text-center">Paid Services</TableHead>
+                        <TableHead className="text-center">Free Services</TableHead>
                         <TableHead className="text-right">Total Revenue</TableHead>
+                        <TableHead className="text-center">AMC</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -358,19 +389,19 @@ export default function RevenueAnalyticsTab() {
                           return (
                             <TableRow key={customer.customerId.toString()}>
                               <TableCell className="font-medium">{customer.customerName}</TableCell>
-                              <TableCell>
+                              <TableCell className="text-center">{Number(customer.paidServicesCount)}</TableCell>
+                              <TableCell className="text-center">{Number(customer.freeServicesCount)}</TableCell>
+                              <TableCell className="text-right font-medium">
+                                {formatCurrency(Number(customer.totalRevenue))}
+                              </TableCell>
+                              <TableCell className="text-center">
                                 {amcInfo ? (
                                   <Badge variant="outline">
                                     {amcInfo.label}
                                   </Badge>
                                 ) : (
-                                  <span className="text-sm text-muted-foreground">No AMC</span>
+                                  <span className="text-muted-foreground text-sm">—</span>
                                 )}
-                              </TableCell>
-                              <TableCell className="text-right">{Number(customer.paidServicesCount)}</TableCell>
-                              <TableCell className="text-right">{Number(customer.freeServicesCount)}</TableCell>
-                              <TableCell className="text-right font-medium">
-                                {formatCurrency(Number(customer.totalRevenue))}
                               </TableCell>
                             </TableRow>
                           );

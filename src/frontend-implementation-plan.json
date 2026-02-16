@@ -1,45 +1,68 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Deployment verification: AMC tab visibility & ₹ currency formatting",
+  "title": "Frontend: Restrict payment methods to UPI and Cash",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Produce a new build/deployment from the current code state without feature changes.",
+      "id": "REQ-4",
+      "summary": "Update Revenue → Payment Methods UI to show only UPI and Cash.",
       "acceptanceCriteria": [
-        "A new deployment/build is produced from the current codebase state without requiring additional feature changes.",
-        "The newly deployed version is accessible via the standard preview/live URL used by the platform."
+        "Revenue → Payment Methods UI shows only two entries: UPI and Cash.",
+        "No Bank Transfer / Online / Cheque / Other labels appear anywhere in the Revenue Payment Methods UI.",
+        "The Revenue tab renders without TypeScript errors after the backend type changes."
       ],
       "file_operations": [
         {
-          "path": "frontend/DEPLOYMENT.md",
-          "operation": "create",
-          "description": "Add a lightweight deployment checklist for producing a new build from the current state (no functional changes), including how to access the standard preview/live URL and confirm the correct build is running."
+          "path": "frontend/src/components/RevenueAnalyticsTab.tsx",
+          "operation": "modify",
+          "description": "Remove any UI cards/rows/labels and related formatting for Bank Transfer, Online, Cheque, and Other from the Payment Methods tab; ensure only UPI and Cash are rendered and only the supported PaymentMethodBreakdown fields are accessed (upiPayments, cashPayments)."
         }
       ]
     },
     {
-      "id": "REQ-2",
-      "summary": "Verify AMC tab visibility for authenticated users and enforce consistent ₹ currency formatting across the UI.",
+      "id": "REQ-5",
+      "summary": "Remove unsupported payment methods from all other frontend payment-method selectors/displays (including AMC forms) and ensure only UPI/Cash are sent to the backend.",
       "acceptanceCriteria": [
-        "When logged in, the Dashboard shows an \"AMC\" tab and the AMC screen renders without errors.",
-        "UI-rendered money amounts use ₹ formatting consistently (including dashboards and analytics views)."
+        "No UI dropdown/radio/select in the app offers Bank Transfer, Online, Cheque, or Other.",
+        "AMC/payment-method related forms (if present) only allow UPI and Cash.",
+        "Frontend builds successfully and can create/update relevant records using only UPI/Cash."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/utils.ts",
+          "path": "frontend/src/components/AddCustomerDialog.tsx",
           "operation": "modify",
-          "description": "Harden currency formatting to consistently display INR with the ₹ symbol (e.g., using Intl.NumberFormat options that prefer the narrow symbol) and keep behavior consistent for existing call sites that pass paise-like minor units. Verify the component's usage instructions before implementing."
+          "description": "Update the AMC Payment Method selector to offer only UPI and Cash; remove Bank Transfer/Online/Cheque options and update the mapping logic so values sent in amcDetails.paymentMethod align with the backend-generated PaymentMethod type."
         },
         {
-          "path": "frontend/src/pages/Dashboard.tsx",
+          "path": "frontend/src/components/CustomerDetailDialog.tsx",
           "operation": "modify",
-          "description": "Add a small, explicit verification-friendly guard/annotation to ensure the \"AMC\" tab trigger and its content wiring remain present for authenticated sessions (Dashboard renders only when authenticated per app flow), and confirm the AMC tab content mounts without runtime errors. Verify the component's usage instructions before implementing."
+          "description": "Update the AMC edit/view section to only display and allow selecting UPI or Cash for AMC payment method; remove any string/variant mappings for Bank Transfer/Online/Cheque/Other and ensure updateCustomer requests submit only supported payment method values."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/components/ServicesTab.tsx",
           "operation": "modify",
-          "description": "Confirm authenticated-only access to application data remains enforced (per the authorization component's frontend guidance: users must be logged in before seeing application data), and add a brief internal verification note/check to validate AMC tab visibility after deployment. Verify the component's usage instructions before implementing."
+          "description": "Audit and update any payment-method display or selection related to service payment updates so only UPI and Cash can be chosen/shown, and no removed labels are rendered anywhere in the services workflow."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Align React Query hooks and frontend types to the new PaymentMethodBreakdown shape (UPI + Cash only).",
+      "acceptanceCriteria": [
+        "TypeScript compilation succeeds with updated backend-generated types.",
+        "Payment method breakdown queries still load successfully and render correct UPI/Cash totals.",
+        "No runtime undefined-access occurs due to removed fields (e.g., bankTransfer, onlinePayments, chequePayments, otherPayments)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Update the payment-method breakdown query hook(s) (including any period-based breakdown hook) to match the updated backend return type containing only upiPayments and cashPayments; remove any references to removed breakdown fields and ensure query keys/types remain consistent."
+        },
+        {
+          "path": "frontend/src/components/RevenueAnalyticsTab.tsx",
+          "operation": "modify",
+          "description": "Update consumption of the payment breakdown query result to rely only on upiPayments and cashPayments and remove any access to removed properties to prevent TypeScript and runtime errors."
         }
       ]
     }

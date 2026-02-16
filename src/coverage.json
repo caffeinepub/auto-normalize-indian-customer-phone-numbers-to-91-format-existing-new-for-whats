@@ -1,53 +1,92 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-16T04:02:45.752Z",
+  "generatedAt": "2026-02-16T18:05:12.378Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 6,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Deploy a new build of the current application state so the latest changes are live/previewable.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/DEPLOYMENT.md"
-        ],
-        "matchedFiles": [
-          "frontend/DEPLOYMENT.md"
-        ]
+        "summary": "Update the backend payment method data model so that only UPI and Cash are supported everywhere, removing Bank Transfer, Online, Cheque, and Other variants from all relevant types and APIs.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "After deployment, verify that the AMC tab is visible for authenticated users and that currency amounts display with the ₹ symbol consistently across the UI.",
+        "summary": "Update backend revenue/payment breakdown logic to only track and return UPI and Cash totals, removing all Bank Transfer / Online / Cheque / Other fields from the breakdown type and its computation.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Implement a state migration (conditional upgrade) so that any existing stored records using removed payment methods are converted to a supported method (UPI or Cash) during upgrade, preventing runtime traps or decode failures after deploying the new candid interface.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Update the Revenue section UI (RevenueAnalyticsTab payment methods view) to display only UPI and Cash, removing any cards/rows/labels for Bank Transfer, Online, Cheque, and Other.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/utils.ts",
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/components/RevenueAnalyticsTab.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/utils.ts",
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/components/RevenueAnalyticsTab.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Update any other frontend payment-method selectors or displays that currently include Bank Transfer, Online, Cheque, or Other (including AMC-related payment method inputs) so the only available options are UPI and Cash, and ensure requests sent to the backend use only the supported variants.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/AddCustomerDialog.tsx",
+          "frontend/src/components/CustomerDetailDialog.tsx",
+          "frontend/src/components/ServicesTab.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/AddCustomerDialog.tsx",
+          "frontend/src/components/CustomerDetailDialog.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Update frontend React Query hooks and types that depend on the backend PaymentMethodBreakdown shape to match the new backend response (UPI + Cash only).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/RevenueAnalyticsTab.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/RevenueAnalyticsTab.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/DEPLOYMENT.md",
-    "frontend/src/App.tsx",
-    "frontend/src/lib/utils.ts",
-    "frontend/src/pages/Dashboard.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/AddAMCContractDialog.tsx",
+    "frontend/src/components/AddCustomerDialog.tsx",
+    "frontend/src/components/CustomerDetailDialog.tsx",
+    "frontend/src/components/RevenueAnalyticsTab.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

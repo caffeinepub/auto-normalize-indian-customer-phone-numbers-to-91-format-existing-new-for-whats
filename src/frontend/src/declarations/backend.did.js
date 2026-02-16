@@ -53,16 +53,13 @@ export const ServiceType = IDL.Variant({
   'other' : IDL.Text,
   'maintenance' : IDL.Null,
 });
-export const AMCPaymentMethod = IDL.Variant({
-  'other' : IDL.Text,
+export const PaymentMethod = IDL.Variant({
+  'upi' : IDL.Null,
   'cash' : IDL.Null,
-  'bankTransfer' : IDL.Null,
-  'cheque' : IDL.Null,
-  'online' : IDL.Null,
 });
 export const AMCDetails = IDL.Record({
   'id' : IDL.Nat,
-  'paymentMethod' : AMCPaymentMethod,
+  'paymentMethod' : PaymentMethod,
   'durationYears' : IDL.Nat,
   'contractType' : AMCType,
   'contractEndDate' : Time,
@@ -111,10 +108,6 @@ export const PaymentStatus = IDL.Variant({
   'paid' : IDL.Null,
   'unpaid' : IDL.Null,
 });
-export const PaymentMethod = IDL.Variant({
-  'upi' : IDL.Null,
-  'cash' : IDL.Null,
-});
 export const ServiceEntry = IDL.Record({
   'id' : IDL.Nat,
   'serviceDate' : Time,
@@ -148,12 +141,8 @@ export const CustomerRevenueBreakdown = IDL.Record({
   'freeServicesCount' : IDL.Nat,
 });
 export const PaymentMethodBreakdown = IDL.Record({
-  'otherPayments' : IDL.Nat,
   'cashPayments' : IDL.Nat,
-  'bankTransfer' : IDL.Nat,
   'upiPayments' : IDL.Nat,
-  'chequePayments' : IDL.Nat,
-  'onlinePayments' : IDL.Nat,
 });
 export const RevenueByPeriod = IDL.Record({
   'paidServicesCount' : IDL.Nat,
@@ -221,7 +210,11 @@ export const idlService = IDL.Service({
       [AMCServiceEntry],
       [],
     ),
-  'addAmc' : IDL.Func([IDL.Nat, AMCType, IDL.Nat, Time, Time], [], []),
+  'addAmcForCustomers' : IDL.Func(
+      [IDL.Vec(IDL.Nat), AMCType, IDL.Nat, Time, Time],
+      [],
+      [],
+    ),
   'addCustomer' : IDL.Func(
       [
         IDL.Text,
@@ -401,16 +394,10 @@ export const idlFactory = ({ IDL }) => {
     'other' : IDL.Text,
     'maintenance' : IDL.Null,
   });
-  const AMCPaymentMethod = IDL.Variant({
-    'other' : IDL.Text,
-    'cash' : IDL.Null,
-    'bankTransfer' : IDL.Null,
-    'cheque' : IDL.Null,
-    'online' : IDL.Null,
-  });
+  const PaymentMethod = IDL.Variant({ 'upi' : IDL.Null, 'cash' : IDL.Null });
   const AMCDetails = IDL.Record({
     'id' : IDL.Nat,
-    'paymentMethod' : AMCPaymentMethod,
+    'paymentMethod' : PaymentMethod,
     'durationYears' : IDL.Nat,
     'contractType' : AMCType,
     'contractEndDate' : Time,
@@ -459,7 +446,6 @@ export const idlFactory = ({ IDL }) => {
     'paid' : IDL.Null,
     'unpaid' : IDL.Null,
   });
-  const PaymentMethod = IDL.Variant({ 'upi' : IDL.Null, 'cash' : IDL.Null });
   const ServiceEntry = IDL.Record({
     'id' : IDL.Nat,
     'serviceDate' : Time,
@@ -493,12 +479,8 @@ export const idlFactory = ({ IDL }) => {
     'freeServicesCount' : IDL.Nat,
   });
   const PaymentMethodBreakdown = IDL.Record({
-    'otherPayments' : IDL.Nat,
     'cashPayments' : IDL.Nat,
-    'bankTransfer' : IDL.Nat,
     'upiPayments' : IDL.Nat,
-    'chequePayments' : IDL.Nat,
-    'onlinePayments' : IDL.Nat,
   });
   const RevenueByPeriod = IDL.Record({
     'paidServicesCount' : IDL.Nat,
@@ -566,7 +548,11 @@ export const idlFactory = ({ IDL }) => {
         [AMCServiceEntry],
         [],
       ),
-    'addAmc' : IDL.Func([IDL.Nat, AMCType, IDL.Nat, Time, Time], [], []),
+    'addAmcForCustomers' : IDL.Func(
+        [IDL.Vec(IDL.Nat), AMCType, IDL.Nat, Time, Time],
+        [],
+        [],
+      ),
     'addCustomer' : IDL.Func(
         [
           IDL.Text,

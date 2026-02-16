@@ -25,3 +25,18 @@ export function getFYQuarterLabel(quarter: number): string {
   const q = FY_QUARTERS.find(fq => fq.quarter === quarter);
   return q ? q.label : `Q${quarter}`;
 }
+
+export function getFYQuarterMonths(quarter: number): number[] {
+  const q = FY_QUARTERS.find(fq => fq.quarter === quarter);
+  if (!q) return [];
+  
+  if (quarter === 4) {
+    return [1, 2, 3];
+  }
+  
+  const months: number[] = [];
+  for (let m = q.startMonth; m <= q.endMonth; m++) {
+    months.push(m);
+  }
+  return months;
+}

@@ -7,13 +7,14 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import Dashboard from './pages/Dashboard';
 import LoginPrompt from './components/LoginPrompt';
+import AppErrorBoundary from './components/AppErrorBoundary';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle2, Database } from 'lucide-react';
 
 /**
- * Main application component with Internet Identity authentication.
+ * Main application component with Internet Identity authentication and error boundary protection.
  * VERIFICATION: Authenticated-only access is enforced - Dashboard (which includes AMC tab)
- * is only rendered when isAuthenticated is true (line 63). This ensures users must log in
+ * is only rendered when isAuthenticated is true. This ensures users must log in
  * before accessing any application data, including AMC contracts.
  */
 export default function App() {
@@ -52,26 +53,28 @@ export default function App() {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <div className="flex min-h-screen flex-col">
-        <Header />
-        <main className="flex-1">
-          {showLoginPrompt && <LoginPrompt />}
-          {isLoadingData && showDashboard && (
-            <div className="container py-8">
-              <Alert className="border-primary/20 bg-primary/5">
-                <Database className="h-4 w-4 animate-pulse" />
-                <AlertDescription className="ml-2">
-                  Loading and validating data persistence...
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-          {/* VERIFICATION: Dashboard (with AMC tab) only renders when authenticated */}
-          {showDashboard && <Dashboard />}
-        </main>
-        <Footer />
-      </div>
-      <Toaster />
+      <AppErrorBoundary>
+        <div className="flex min-h-screen flex-col">
+          <Header />
+          <main className="flex-1">
+            {showLoginPrompt && <LoginPrompt />}
+            {isLoadingData && showDashboard && (
+              <div className="container py-8">
+                <Alert className="border-primary/20 bg-primary/5">
+                  <Database className="h-4 w-4 animate-pulse" />
+                  <AlertDescription className="ml-2">
+                    Loading and validating data persistence...
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+            {/* VERIFICATION: Dashboard (with AMC tab) only renders when authenticated */}
+            {showDashboard && <Dashboard />}
+          </main>
+          <Footer />
+        </div>
+        <Toaster />
+      </AppErrorBoundary>
     </ThemeProvider>
   );
 }

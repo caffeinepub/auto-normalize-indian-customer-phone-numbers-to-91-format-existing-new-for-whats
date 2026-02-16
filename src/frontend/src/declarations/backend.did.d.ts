@@ -19,7 +19,7 @@ export interface AMCContract {
 }
 export interface AMCDetails {
   'id' : bigint,
-  'paymentMethod' : AMCPaymentMethod,
+  'paymentMethod' : PaymentMethod,
   'durationYears' : bigint,
   'contractType' : AMCType,
   'contractEndDate' : Time,
@@ -28,11 +28,6 @@ export interface AMCDetails {
   'notes' : string,
   'contractStartDate' : Time,
 }
-export type AMCPaymentMethod = { 'other' : string } |
-  { 'cash' : null } |
-  { 'bankTransfer' : null } |
-  { 'cheque' : null } |
-  { 'online' : null };
 export interface AMCRevenue {
   'completedAmount' : bigint,
   'inProgressAmount' : bigint,
@@ -100,12 +95,8 @@ export interface ImportResult {
 export type PaymentMethod = { 'upi' : null } |
   { 'cash' : null };
 export interface PaymentMethodBreakdown {
-  'otherPayments' : bigint,
   'cashPayments' : bigint,
-  'bankTransfer' : bigint,
   'upiPayments' : bigint,
-  'chequePayments' : bigint,
-  'onlinePayments' : bigint,
 }
 export type PaymentStatus = { 'free' : null } |
   { 'paid' : null } |
@@ -190,7 +181,10 @@ export interface _SERVICE {
     ],
     AMCServiceEntry
   >,
-  'addAmc' : ActorMethod<[bigint, AMCType, bigint, Time, Time], undefined>,
+  'addAmcForCustomers' : ActorMethod<
+    [Array<bigint>, AMCType, bigint, Time, Time],
+    undefined
+  >,
   'addCustomer' : ActorMethod<
     [
       string,

@@ -1,51 +1,137 @@
 {
   "kind": "build_request",
-  "title": "Deploy a new build (no functional changes)",
+  "title": "Remove Bank Transfer, Online, Cheque, and Other payment methods (leave only UPI and Cash)",
+  "projectName": "Service Revenue",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Deploy a new build of the current application state so the latest changes are live/previewable.",
-      "target": "unknown",
+      "text": "Update the backend payment method data model so that only UPI and Cash are supported everywhere, removing Bank Transfer, Online, Cheque, and Other variants from all relevant types and APIs.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6",
+          "msg-7"
         ],
         "quotes": [
-          "Yes\nDeploy a new build"
+          "Remove Bank Transfer, Online, cheque and other from payment methods",
+          "Remaining payment methods is UPI and CASH"
         ]
       },
       "acceptanceCriteria": [
-        "A new deployment/build is produced from the current codebase state without requiring additional feature changes.",
-        "The newly deployed version is accessible via the standard preview/live URL used by the platform."
+        "Motoko types no longer expose removed payment method variants (Bank Transfer, Online, Cheque, Other).",
+        "Any backend API that returns or accepts payment-method related values compiles and uses only UPI and Cash variants.",
+        "Candid interface generation succeeds with the updated types."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "After deployment, verify that the AMC tab is visible for authenticated users and that currency amounts display with the ₹ symbol consistently across the UI.",
-      "target": "frontend",
+      "text": "Update backend revenue/payment breakdown logic to only track and return UPI and Cash totals, removing all Bank Transfer / Online / Cheque / Other fields from the breakdown type and its computation.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6",
+          "msg-7"
         ],
         "quotes": [
-          "Deploy a new build"
+          "Remove Bank Transfer, Online, cheque and other from payment methods",
+          "In revenue section/payment methods"
         ]
       },
       "acceptanceCriteria": [
-        "When logged in, the Dashboard shows an \"AMC\" tab and the AMC screen renders without errors.",
-        "UI-rendered money amounts use ₹ formatting consistently (including dashboards and analytics views)."
+        "Backend payment method breakdown result includes only UPI and Cash totals.",
+        "Backend no longer computes or returns totals for Bank Transfer, Online, Cheque, or Other.",
+        "All revenue endpoints compile and return correct values for UPI and Cash."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Implement a state migration (conditional upgrade) so that any existing stored records using removed payment methods are converted to a supported method (UPI or Cash) during upgrade, preventing runtime traps or decode failures after deploying the new candid interface.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-8"
+        ],
+        "quotes": [
+          "Remove from all"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Upgrade does not fail when pre-upgrade state contains removed payment method variants.",
+        "After upgrade, all persisted data contains only supported payment methods (UPI or Cash).",
+        "Post-upgrade queries that previously touched AMC/payment-method data run without trapping."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Update the Revenue section UI (RevenueAnalyticsTab payment methods view) to display only UPI and Cash, removing any cards/rows/labels for Bank Transfer, Online, Cheque, and Other.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6",
+          "msg-7"
+        ],
+        "quotes": [
+          "Remove Bank Transfer, Online, cheque and other from payment methods",
+          "In revenue section/payment methods"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Revenue → Payment Methods UI shows only two entries: UPI and Cash.",
+        "No Bank Transfer / Online / Cheque / Other labels appear anywhere in the Revenue Payment Methods UI.",
+        "The Revenue tab renders without TypeScript errors after the backend type changes."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Update any other frontend payment-method selectors or displays that currently include Bank Transfer, Online, Cheque, or Other (including AMC-related payment method inputs) so the only available options are UPI and Cash, and ensure requests sent to the backend use only the supported variants.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-7",
+          "msg-8"
+        ],
+        "quotes": [
+          "Remaining payment methods is UPI and CASH",
+          "Remove from all"
+        ]
+      },
+      "acceptanceCriteria": [
+        "No UI dropdown/radio/select in the app offers Bank Transfer, Online, Cheque, or Other.",
+        "AMC/payment-method related forms (if present) only allow UPI and Cash.",
+        "Frontend builds successfully and can create/update relevant records using only UPI/Cash."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Update frontend React Query hooks and types that depend on the backend PaymentMethodBreakdown shape to match the new backend response (UPI + Cash only).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6",
+          "msg-7"
+        ],
+        "quotes": [
+          "Remove Bank Transfer, Online, cheque and other from payment methods",
+          "Remove from all"
+        ]
+      },
+      "acceptanceCriteria": [
+        "TypeScript compilation succeeds with updated backend-generated types.",
+        "Payment method breakdown queries still load successfully and render correct UPI/Cash totals.",
+        "No runtime undefined-access occurs due to removed fields (e.g., bankTransfer, onlinePayments, chequePayments, otherPayments)."
       ]
     }
   ],
   "constraints": [
-    "Use English for any user-facing text.",
-    "Do not modify any files under frontend/immutablePaths (compose UI components instead).",
-    "Respect the single-actor backend architecture (all Motoko logic remains in backend/main.mo)."
+    "Backend must remain a single Motoko actor in backend/main.mo; only add backend/migration.mo changes if required for state upgrade.",
+    "Do not modify any frontend files under frontend/src/components/ui or other immutable paths listed in SYSTEM_CONTEXT; compose existing UI components instead.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Adding new AMC functionality beyond what is already implemented.",
-    "Changing application features or UI behavior unrelated to deployment verification."
+    "Do not add any new payment methods beyond UPI and Cash.",
+    "Do not introduce third-party payment provider integrations or external databases.",
+    "Do not change unrelated revenue quarter/FY logic beyond what is necessary to remove the payment methods."
   ],
   "imageRequirements": {
     "required": [],
